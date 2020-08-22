@@ -6,4 +6,4 @@ My primary source of preparation is the AWAE course material and labs. However, 
 
 Hope you enjoy the writeups and feel free to get in touch with me if you have any questions / suggestions! 
 
-![](images/boxes.png)
+![](images/introduction/boxes.png)
