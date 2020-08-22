@@ -341,9 +341,6 @@ Both vulnerabilities were discovered in the upload.php page, so we'll start with
 
 Lines 2–6 of the upload.php script handle the redirection functionality.
 
-
-Lines 2–6 of the upload.php script handle the redirection functionality.
-
 ![](/linux-boxes/magic/images/17.png)
 
 The following is an overview of the code:
@@ -373,7 +370,8 @@ To make this really clear, we can write a small PHP script that redirects to ano
 root@kali:~/Desktop/temp# cat page1.php 
 <?php
 // page1.php
-session_start();                                                                  if (!isset($_SESSION['user_id'])) {                                                  
+session_start();                                                                  
+if (!isset($_SESSION['user_id'])) {                                                  
     header("Location: page2.php");                                                   
 }                                                                                                                                                                                                                                                           
 echo 'Welcome to page #1';
@@ -420,3 +418,42 @@ echo 'Welcome to page #1';
 Now when you visit page 1 in the browser, you automatically get redirected to page 2 but anything after the exit function is no longer rendered.
 
 ![](/linux-boxes/magic/images/21.png)
+
+**Vuln #2: Insecure File Upload Functionality**
+
+Lines 7–44 describe the upload functionality. We can see that there are two validation checks that are being performed, the first one checks the file format and the second checks the file type using magic bytes.
+
+![](/linux-boxes/magic/images/22.png)
+
+Let's dive into the first validation check. Lines 14–19 verify if the file format is anything other than JPG, PNG & JPEG.
+
+![](/linux-boxes/magic/images/23.png)
+
+The following is an overview of the code:
+* **Line 15:** Calls the pathinfo function which takes in the uploaded file and uses the option PATHINFO_EXTENSION to strip out the extension of the file and save it in the variable imageFileType. The thing to note about this option is that if the file has more than one extension, it strips the last one.
+* **Lines 16–18:** Checks if the file extension is one of the three: jpg, png & jpeg. If not, it outputs an alert and the file upload fails.
+
+How can we bypass this validation check? Since the PATHINFO_EXTENSION option only strips out the last extension, if the file has more than one extension, we could simply name the file "test.php.png". When the filename passes through this validation check, it outputs that the file extension is png.
+
+The next validation check being performed is on Lines 21–28 which verifies that the image is actually a png or jepg using magic bytes.
+
+![](/linux-boxes/magic/images/24.png)
+
+The following is an overview of the code:
+* **Line 23:** Calls the exif_imagetype function which takes in the uploaded file and reads the first bytes of an image and checks its signature. When a correct signature is found, the appropriate constant value will be returned (1 for GIF, 2 for JPEG, 3 for PNG, etc.), otherwise the return value is False.
+* **Lines 23–27:** Use the in_array function to see if the constant value outputted from the exif_imagetype function exists in the array of the allowed values which was initialized at the beginning of the script to 2 & 3. Therefore, this validation check only accepts signatures for JPEG and PNG images.
+
+How can we bypass this validation check? Since the exif_imagetype function only reads the first bytes of the image to check the signature, we can simply add a malicious script to an existing JPEG or PNG file like we did with exiftool.
+
+The remaining lines of the code upload the file in the directory images/uploads if the file passed the above two validation checks.
+
+![](/linux-boxes/magic/images/25.png)
+
+How do you fix this vulnerability? Ideally you would use a third party service that offers enterprise security with features such as antivirus scanning to manage the file upload system. However, if that option is not possible, the [OWASP guide](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload) has a list of prevention methods to secure file uploads. These include but are not limited to, the use a virus scanner on the server, consider saving the files in a database instead of a filesystem, or if a filesystem is necessary, then on an isolated server and ensuring that the upload directory does not have any execute permissions.
+
+## Conclusion
+
+1 box down, 13 more to go.
+
+![](/linux-boxes/magic/images/26.png)
+
