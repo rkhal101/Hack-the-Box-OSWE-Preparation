@@ -200,6 +200,7 @@ su: Authentication failure
 ```
 
 Doesn't work. The next thing to try is logging into the database with the credentials we found.
+
 ![](/linux-boxes/magic/images/14.png)
 
 We can see that mysqldump is installed on the box, which we'll use to dump the database. 
@@ -225,6 +226,7 @@ theseus@ubuntu:/usr/bin$
 ```
 
 We're in! View the user.txt flag.
+
 ![](/linux-boxes/magic/images/15.png)
 
 Now we need to escalate our privileges to root. I downloaded the LinEnum script and ran it. It looks like the SUID bit is set for the sysinfo program, which means that the program runs with the privileges of the owner of the file, which is root.
@@ -280,11 +282,11 @@ sysinfo
 
 We get a shell!
 
-![](/linux-boxes/magic/images/16.png)
+![](/linux-boxes/magic/images/15-a.png)
 
 Upgrade the shell and get the root.txt flag.
 
-![](/linux-boxes/magic/images/17.png)
+![](/linux-boxes/magic/images/15-b.png)
 
 ## Automated Scripts
 
@@ -292,5 +294,5 @@ This section automates the web application attack vector(s) of the box. I've wri
 
 The script automates the initial foothold vector for this box and can be found [here](/linux-boxes/magic/htb-magic-exploit.py). Refer to the Usage Instructions in the main method for instructions on how to run the script.
 
-![](/linux-boxes/magic/images/18.png)
+![](/linux-boxes/magic/images/15.png)
 
