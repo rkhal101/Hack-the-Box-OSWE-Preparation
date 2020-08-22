@@ -5,9 +5,9 @@ List of HTB Linux boxes that are similar to the OSWE labs.
 <table>
   <thead>
     <tr>
-      <th style="text-align:center"> <a href="magic-writeup.md"><b>Magic</b></a>&lt;b&gt;&lt;/b&gt;</th>
+      <th style="text-align:center"> <a href="magic-writeup.md">Magic</a>&lt;b&gt;&lt;/b&gt;</th>
       <th
-      style="text-align:center">&lt;b&gt;&lt;/b&gt;<a href="test"><b></b></a><b>   </b>
+      style="text-align:center">&lt;b&gt;&lt;/b&gt;<a href="test"></a><b>   </b>
         </th>
     </tr>
   </thead>
@@ -15,7 +15,7 @@ List of HTB Linux boxes that are similar to the OSWE labs.
     <tr>
       <td style="text-align:center">
         <br />&#x200B;
-        <img src="https://gblobscdn.gitbook.com/assets%2F-M7FrW_mh9HesegKl0UA%2F-M7FwpSwASfYjrxiqukb%2F-M7FyvpoZtqzkvXiaWQd%2Fimage.png?alt=media&amp;token=631d7880-d429-4cc1-91fe-efafce26ff80"
+        <img src="/linux-boxes/magic/images/27.png"
         alt/>
       </td>
       <td style="text-align:center">
