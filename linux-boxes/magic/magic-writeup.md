@@ -447,7 +447,7 @@ How can we bypass this validation check? Since the exif_imagetype function only 
 
 The remaining lines of the code upload the file in the directory images/uploads if the file passed the above two validation checks.
 
-![](/linux-boxes/magic/images/25.png)
+![](/linux-boxes/magic/images/26.png)
 
 How do you fix this vulnerability? Ideally you would use a third party service that offers enterprise security with features such as antivirus scanning to manage the file upload system. However, if that option is not possible, the [OWASP guide](https://owasp.org/www-community/vulnerabilities/Unrestricted_File_Upload) has a list of prevention methods to secure file uploads. These include but are not limited to, the use a virus scanner on the server, consider saving the files in a database instead of a filesystem, or if a filesystem is necessary, then on an isolated server and ensuring that the upload directory does not have any execute permissions.
 
@@ -455,5 +455,5 @@ How do you fix this vulnerability? Ideally you would use a third party service t
 
 1 box down, 13 more to go.
 
-![](/linux-boxes/magic/images/26.png)
+![](/linux-boxes/magic/images/27.png)
 
