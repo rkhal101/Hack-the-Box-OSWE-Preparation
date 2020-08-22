@@ -296,3 +296,127 @@ The script automates the initial foothold vector for this box and can be found [
 
 ![](/linux-boxes/magic/images/16.png)
 
+## Secure Code Review
+
+This section dives into the code to find out what portion(s) of the code introduced the vulnerabilities.
+
+### Setup
+
+Zip the www directory.
+
+```
+zip -r www.zip www/
+```
+
+Start a python server on the target machine.
+
+```
+python3 -m http.server
+```
+
+Download the zipped file on the target machine.
+
+```
+wget http://10.10.10.185:8000/www.zip
+```
+
+Unzip the file.
+
+```
+unzip www.zip 
+```
+
+**Note:** I have uploaded the code on GitHub.
+
+### Code Review
+
+We observed two vulnerabilities while testing the web application.
+
+1. Improper redirection
+2. Insecure file upload functionality.
+
+Both vulnerabilities were discovered in the upload.php page, so we'll start with that page.
+
+**Vuln #1: Improper Redirection**
+
+Lines 2–6 of the upload.php script handle the redirection functionality.
+
+
+Lines 2–6 of the upload.php script handle the redirection functionality.
+
+![](/linux-boxes/magic/images/17.png)
+
+The following is an overview of the code:
+
+* **Line 2:** Calls the session_start function which creates a session or resumes the current one based on a session identifier passed via a GET or POST request, or passed via a cookie.
+* **Lines 4–6:** Call the isset function to check whether the user is logged in or not. This is done by checking if the user_id index of the global $\_SESSION variable evaluating to anything other than null. If the user is not logged in, the header function gets called which redirects the user to the login page.
+
+Before we dive into why this code is vulnerable, it's worth looking at how sessions are created on the server-side. 
+
+Sessions are saved in the following folder on the system. In the below image, the first session (sess_6aen…) was created by logging into the application using a valid username/password. Therefore, the size of the image is larger than zero b/c it contains session information. Whereas, the second session (sess_tkas...) was created by navigating to the upload.php script w/o logging in. Therefore, although the session got created, it does not contain any information.
+
+![](/linux-boxes/magic/images/18.png)
+
+Viewing the content of the first session we see the user id is associated to a value and therefore when the isset function is called, it evaluates to true which skips the redirection to the login page.
+
+```
+root@ubuntu:/var/lib/php/sessions# cat sess_6aengltqst8pck0jccrlkgmb8h 
+user_id|s:1:"1";
+```
+
+Why is this code vulnerable? Notice that when a user does not have a valid session id, the user is redirected but any code after line #6 is still rendered in the HTTP response before the redirect. 
+
+That's why when we stopped the redirection in the proxy, we were able to see the upload functionality. 
+To make this really clear, we can write a small PHP script that redirects to another page if a session is not valid.
+
+```
+root@kali:~/Desktop/temp# cat page1.php 
+<?php
+// page1.php
+session_start();                                                                  if (!isset($_SESSION['user_id'])) {                                                  
+    header("Location: page2.php");                                                   
+}                                                                                                                                                                                                                                                           
+echo 'Welcome to page #1';
+?>
+root@kali:~/Desktop/temp# cat page2.php 
+<?php
+// page2.php
+session_start();
+echo 'Welcome to page #2';
+?>
+```
+
+To test the code, setup a PHP server. 
+
+```
+php -S 127.0.0.1:8888
+```
+
+Then visit page 1 in the browser. This automatically redirects you to page 2.
+
+![](/linux-boxes/magic/images/19.png)
+
+However, if we see the request in the proxy, we can see that before it redirects the user, the code in page 1 is rendered.
+
+![](/linux-boxes/magic/images/20.png)
+
+The way to fix this vulnerability is simply to add the die() or exit() functions after the Location header. This makes sure that the code below the function does not get executed when redirected.
+
+Therefore, to fix the vulnerability, make the following change to page1.php.
+
+```
+root@kali:~/Desktop/temp# cat page1-fix.php 
+<?php
+// page1.php
+session_start();
+if (!isset($_SESSION['user_id'])) {
+        header("Location: page2.php");
+        exit();
+}
+echo 'Welcome to page #1';
+?>
+```
+
+Now when you visit page 1 in the browser, you automatically get redirected to page 2 but anything after the exit function is no longer rendered.
+
+![](/linux-boxes/magic/images/21.png)
