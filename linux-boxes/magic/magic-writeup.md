@@ -294,5 +294,5 @@ This section automates the web application attack vector(s) of the box. I've wri
 
 The script automates the initial foothold vector for this box and can be found [here](/linux-boxes/magic/htb-magic-exploit.py). Refer to the Usage Instructions in the main method for instructions on how to run the script.
 
-![](/linux-boxes/magic/images/15.png)
+![](/linux-boxes/magic/images/16.png)
 
