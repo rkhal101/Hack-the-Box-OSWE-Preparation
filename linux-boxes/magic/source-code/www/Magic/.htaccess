@@ -1,0 +1,7 @@
+<FilesMatch ".+\.ph(p([3457s]|\-s)?|t|tml)">
+SetHandler application/x-httpd-php
+</FilesMatch>
+<Files ~ "\.(sh|sql)">
+   order deny,allow
+   deny from all
+</Files>
