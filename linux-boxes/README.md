@@ -5,7 +5,7 @@ List of HTB Linux boxes that are similar to the OSWE labs.
 <table>
   <thead>
     <tr>
-      <th style="text-align:center"> <a href="magic-writeup.md">Magic</a>&lt;b&gt;&lt;/b&gt;</th>
+      <th style="text-align:center"> <a href="magic-writeup.md">Magic</a></th>
       <th
       style="text-align:center">&lt;b&gt;&lt;/b&gt;<a href="test"></a></th>
     </tr>
