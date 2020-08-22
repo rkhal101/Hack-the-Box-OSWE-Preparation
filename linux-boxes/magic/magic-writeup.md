@@ -326,7 +326,7 @@ Unzip the file.
 unzip www.zip 
 ```
 
-**Note:** I have uploaded the code on GitHub.
+**Note:** I have uploaded the [code on GitHub](https://github.com/rkhal101/Hack-the-Box-OSWE-Preparation/tree/master/linux-boxes/magic/source-code).
 
 ### Code Review
 
