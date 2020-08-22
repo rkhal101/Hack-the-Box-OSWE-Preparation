@@ -364,7 +364,7 @@ user_id|s:1:"1";
 Why is this code vulnerable? Notice that when a user does not have a valid session id, the user is redirected but any code after line #6 is still rendered in the HTTP response before the redirect. 
 
 That's why when we stopped the redirection in the proxy, we were able to see the upload functionality. 
-To make this really clear, we can write a small PHP script that redirects to another page if a session is not valid.
+To make this really clear, we can write a [small PHP script](https://github.com/rkhal101/Hack-the-Box-OSWE-Preparation/tree/master/linux-boxes/magic/examples) that redirects to another page if a session is not valid.
 
 ```
 root@kali:~/Desktop/temp# cat page1.php 
